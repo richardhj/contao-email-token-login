@@ -91,17 +91,17 @@ class TokenLogin extends Controller
     public function __invoke(string $token, Request $request)
     {
         $statement = $this->connection->createQueryBuilder()
-            ->select('t.member AS member', 'p.alias AS jumpTo')
+            ->select('t.id AS id', 't.member AS member', 'p.alias AS jumpTo')
             ->from('tl_member_login_token', 't')
-            ->where('t.token=:token')
-            ->andWhere('t.expires>=:time')
-            ->innerJoin('t', 'tl_page', 'p', 't.jumpTo=p.id')
+            ->where('t.token =:token')
+            ->andWhere('t.expires >=:time')
+            ->leftJoin('t', 'tl_page', 'p', 't.jumpTo = p.id')
             ->setParameter('token', $token)
             ->setParameter('time', time())
             ->execute();
 
         $result = $statement->fetch(\PDO::FETCH_OBJ);
-        if (null === $result) {
+        if (false === $result) {
             throw new AccessDeniedException('Token not found or expired: '.$token);
         }
 
@@ -110,6 +110,13 @@ class TokenLogin extends Controller
             throw new PageNotFoundException();
         }
 
+        // Unvalidate token
+        $this->connection->createQueryBuilder()
+            ->delete('tl_member_login_token')
+            ->where('id=:id')
+            ->setParameter('id', $result->id)
+            ->execute();
+
         // Authenticate user
         $user = $this->userProvider->loadUserByUsername($member->username);
 
@@ -117,7 +124,7 @@ class TokenLogin extends Controller
         $this->tokenStorage->setToken($usernamePasswordToken);
         $this->session->set('_security_main', serialize($usernamePasswordToken));
 
-        $url = $this->router->generate($result->jumpTo);
+        $url = $this->router->generate($result->jumpTo ?: 'index');
 
         throw new RedirectResponseException($url);
     }

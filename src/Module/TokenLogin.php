@@ -23,14 +23,16 @@ use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\System;
 use Doctrine\DBAL\Connection;
+use NotificationCenter\Model\Notification;
 use Patchwork\Utf8;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\Logout\LogoutUrlGenerator;
 
-class EmailTokenLogin extends Module
+class TokenLogin extends Module
 {
     /**
      * @var TokenChecker
@@ -68,7 +70,7 @@ class EmailTokenLogin extends Module
     private $router;
 
     /**
-     * EmailTokenLogin constructor.
+     * TokenLogin constructor.
      *
      * @param ModuleModel $module
      * @param string      $column
@@ -155,13 +157,16 @@ class EmailTokenLogin extends Module
             return;
         }
 
-        $request = $this->requestStack->getCurrentRequest();
+        $request = $this->requestStack->getMasterRequest();
 
-        $member = MemberModel::findByUsername($request->request->get('username'));
-        if (null === $member) {
-            $this->Template->hasError = true;
-            $this->Template->message  = $GLOBALS['TL_LANG']['ERR']['invalidLogin'];
-        } else {
+        if (0 !== $request->request->count()) {
+
+
+            $member = MemberModel::findByUsername($request->request->get('username'));
+            if (null === $member) {
+                $this->Template->hasError = true;
+                $this->Template->message  = $GLOBALS['TL_LANG']['ERR']['invalidLogin'];
+            } else {
 
 //            $blnRedirectBack = false;
 //
@@ -171,39 +176,58 @@ class EmailTokenLogin extends Module
 //                $strRedirect     = $_SESSION['LAST_PAGE_VISITED'];
 //            } // Redirect to the jumpTo page
 //            elseif ($this->jumpTo && ($objTarget = $this->objModel->getRelated('jumpTo')) instanceof PageModel) {
-            $objTarget = $this->objModel->getRelated('jumpTo');
-            $jumpTo    = ($objTarget instanceof PageModel) ? $objTarget->id : 0;
+                $objTarget = $this->objModel->getRelated('jumpTo');
+                $jumpTo    = ($objTarget instanceof PageModel) ? $objTarget->id : 0;
 //            }
 
 
-            // Generate token
-            $token = $this->tokenGenerator->generateToken();
-            $this->connection->createQueryBuilder()
-                ->insert('tl_member_login_token')
-                ->values(
-                    [
-                        'expires' => strtotime('+2 hours'),
-                        'member'  => $member->id,
-                        'token'   => $token,
-                        'jumpTo'  => $jumpTo,
-                    ]
-                )
-                ->execute();
+                // Generate token
+                $token = $this->tokenGenerator->generateToken();
+                $this->connection->createQueryBuilder()
+                    ->insert('tl_member_login_token')
+                    ->values(
+                        [
+                            'tstamp'  => '?',
+                            'expires' => '?',
+                            'member'  => '?',
+                            'token'   => '?',
+                            'jumpTo'  => '?',
+                        ]
+                    )
+                    ->setParameter(0, time())
+                    ->setParameter(1, strtotime('+2 hours'))
+                    ->setParameter(2, $member->id)
+                    ->setParameter(3, $token)
+                    ->setParameter(4, $jumpTo)
+                    ->execute();
 
-            // Send notification
-            $loginLink    = $this->router->generate(
-                'richardhj.contao_email_token_login.token_login',
-                ['token' => $token],
-                UrlGeneratorInterface::ABSOLUTE_URL
-            );
-            $notification = Notification::findByPk($notificationId);
+                // Send notification
+                $notificationTokens = [
+                    'recipient_email' => $member->email,
+                    'domain'          => $request->getHost(),
+                    'link'            => $this->router->generate(
+                        'richardhj.contao_email_token_login.token_login',
+                        ['token' => $token],
+                        UrlGeneratorInterface::ABSOLUTE_URL
+                    ),
+                ];
+                foreach ($member->row() as $field => $value) {
+                    $notificationTokens['member_'.$field] = $value;
+                }
 
-            $this->Template->success = 'login link zugesendet';
+                $notification = Notification::findByPk($this->nc_notification);
+                if (null !== $notification) {
+                    $notification->send($notificationTokens);
+
+                    $this->Template->success = 'login link zugesendet';
+                } else {
+                    $this->Template->success = 'login link nicht zugesendet';
+                }
+            }
         }
 
-
         $this->Template->username = $GLOBALS['TL_LANG']['MSC']['username'];
-        $this->Template->action   = $this->requestStack->getCurrentRequest()->getBaseUrl();
+        $this->Template->action   = $request->getRequestUri();
         $this->Template->slabel   = \StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['login']);
         $this->Template->value    = \StringUtil::specialchars($this->authenticationUtils->getLastUsername());
         $this->Template->formId   = 'tl_login_'.$this->id;

@@ -1,5 +1,5 @@
 richardhj.contao_email_token_login.token_login:
-    path: /_contao/email_login/{token}
+    path: /_contao/t_login/{token}
     defaults:
         _scope: frontend
         _token_check: false

@@ -32,8 +32,14 @@ $GLOBALS['TL_DCA']['tl_member_login_token'] = [
         'token'   => [
             'sql' => "varchar(255) NOT NULL default ''",
         ],
+        'tstamp' => [
+            'sql' => "int(10) unsigned NOT NULL default '0'",
+        ],
         'expires' => [
             'sql' => "int(10) unsigned NOT NULL default '0'",
         ],
+        'jumpTo' => [
+            'sql' => "int(10) unsigned NOT NULL default '0'",
+        ]
     ],
 ];

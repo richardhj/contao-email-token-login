@@ -12,4 +12,4 @@
  */
 
 
-$GLOBALS['TL_DCA']['tl_module']['palettes']['token_login'] = $GLOBALS['TL_DCA']['tl_module']['palettes']['login'];
+$GLOBALS['TL_DCA']['tl_module']['palettes']['token_login'] = str_replace('autologin','nc_notification', $GLOBALS['TL_DCA']['tl_module']['palettes']['login']);
