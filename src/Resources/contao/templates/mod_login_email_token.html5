@@ -6,6 +6,12 @@
     <<?= $this->hl ?>><?= $this->headline ?></<?= $this->hl ?>>
   <?php endif; ?>
 
+  <?php if ($this->doNotShowForm): ?>
+    <?php if ($this->message): ?>
+      <p><?= $this->message ?></p>
+    <?php endif; ?>
+  <?php else: ?>
+
   <form<?php if ($this->action): ?> action="<?= $this->action ?>"<?php endif; ?> id="<?= $this->formId ?>" method="post">
     <div class="formbody">
       <?php if ($this->message): ?>
@@ -33,6 +39,7 @@
       </div>
     </div>
   </form>
+  <?php endif ?>
 
 </div>
 <!-- indexer::continue -->

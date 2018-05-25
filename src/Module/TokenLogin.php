@@ -21,6 +21,7 @@ use Contao\MemberModel;
 use Contao\Module;
 use Contao\ModuleModel;
 use Contao\PageModel;
+use Contao\StringUtil;
 use Contao\System;
 use Doctrine\DBAL\Connection;
 use NotificationCenter\Model\Notification;
@@ -31,6 +32,7 @@ use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\Logout\LogoutUrlGenerator;
+use Symfony\Component\Translation\TranslatorInterface;
 
 class TokenLogin extends Module
 {
@@ -70,6 +72,11 @@ class TokenLogin extends Module
     private $router;
 
     /**
+     * @var TranslatorInterface
+     */
+    private $translator;
+
+    /**
      * TokenLogin constructor.
      *
      * @param ModuleModel $module
@@ -88,6 +95,7 @@ class TokenLogin extends Module
         $this->connection          = System::getContainer()->get('database_connection');
         $this->tokenGenerator      = System::getContainer()->get('security.csrf.token_generator');
         $this->router              = System::getContainer()->get('router');
+        $this->translator          = System::getContainer()->get('translator');
     }
 
     /**
@@ -101,7 +109,7 @@ class TokenLogin extends Module
             /** @var BackendTemplate|object $objTemplate */
             $objTemplate = new BackendTemplate('be_wildcard');
 
-            $objTemplate->wildcard = '### '.Utf8::strtoupper($GLOBALS['TL_LANG']['FMD']['login'][0]).' ###';
+            $objTemplate->wildcard = '### '.Utf8::strtoupper($this->translator->trans('FMD.login.0', [], 'contao_modules')).' ###';
             $objTemplate->title    = $this->headline;
             $objTemplate->id       = $this->id;
             $objTemplate->link     = $this->name;
@@ -141,15 +149,15 @@ class TokenLogin extends Module
 
             $this->Template->logout     = true;
             $this->Template->formId     = 'tl_logout_'.$this->id;
-            $this->Template->slabel     = \StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['logout']);
+            $this->Template->slabel     = \StringUtil::specialchars($this->translator->trans('MSC.logout', [], 'contao_default'));
             $this->Template->loggedInAs =
-                sprintf($GLOBALS['TL_LANG']['MSC']['loggedInAs'], FrontendUser::getInstance()->username);
+                sprintf($this->translator->trans('MSC.loggedInAs', [], 'contao_default'), FrontendUser::getInstance()->username);
             $this->Template->action     = $this->logoutUrlGenerator->getLogoutPath();
             $this->Template->targetPath = \StringUtil::specialchars($strRedirect);
 
             if (FrontendUser::getInstance()->lastLogin > 0) {
                 $this->Template->lastLogin = sprintf(
-                    $GLOBALS['TL_LANG']['MSC']['lastLogin'][1],
+                    $this->translator->trans('MSC.lastLogin.1', [], 'contao_default'),
                     \Date::parse($objPage->datimFormat, FrontendUser::getInstance()->lastLogin)
                 );
             }
@@ -165,7 +173,7 @@ class TokenLogin extends Module
             $member = MemberModel::findByUsername($request->request->get('username'));
             if (null === $member) {
                 $this->Template->hasError = true;
-                $this->Template->message  = $GLOBALS['TL_LANG']['ERR']['invalidLogin'];
+                $this->Template->message  = $this->translator->trans('ERR.invalidLogin', [], 'contao_default');;
             } else {
 
 //            $blnRedirectBack = false;
@@ -219,17 +227,21 @@ class TokenLogin extends Module
                 if (null !== $notification) {
                     $notification->send($notificationTokens);
 
-                    $this->Template->success = 'login link zugesendet';
+                    $this->Template->doNotShowForm = true;
+                    $this->Template->message       =
+                        $this->translator->trans('MSC.token_login.form_success', [], 'contao_default');
                 } else {
-                    $this->Template->success = 'login link nicht zugesendet';
+                    $this->Template->hasError = true;
+                    $this->Template->message  =
+                        $this->translator->trans('MSC.token_login.form_error', [], 'contao_default');
                 }
             }
         }
 
-        $this->Template->username = $GLOBALS['TL_LANG']['MSC']['username'];
+        $this->Template->username = $this->translator->trans('MSC.username', [], 'contao_default');
         $this->Template->action   = $request->getRequestUri();
-        $this->Template->slabel   = \StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['login']);
-        $this->Template->value    = \StringUtil::specialchars($this->authenticationUtils->getLastUsername());
+        $this->Template->slabel   = StringUtil::specialchars($this->translator->trans('MSC.login', [], 'contao_default'));
+        $this->Template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
         $this->Template->formId   = 'tl_login_'.$this->id;
     }
 }

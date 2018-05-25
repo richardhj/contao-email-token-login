@@ -1,10 +1,18 @@
 <?php
 
 /**
- * Front end modules
+ * This file is part of richardhj/contao-email-token-login.
+ *
+ * Copyright (c) 2018-2018 Richard Henkenjohann
+ *
+ * @package   richardhj/contao-email-token-login
+ * @author    Richard Henkenjohann <richardhenkenjohann@googlemail.com>
+ * @copyright 2018-2018 Richard Henkenjohann
+ * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
  */
 
 use Richardhj\ContaoEmailTokenLoginBundle\Module\TokenLogin;
+
 
 $GLOBALS['FE_MOD']['user']['token_login'] = TokenLogin::class;
 

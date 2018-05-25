@@ -110,7 +110,7 @@ class TokenLogin extends Controller
             throw new PageNotFoundException();
         }
 
-        // Unvalidate token
+        // Invalidate token
         $this->connection->createQueryBuilder()
             ->delete('tl_member_login_token')
             ->where('id=:id')
