@@ -20,12 +20,14 @@ use Contao\CoreBundle\Routing\UrlGenerator;
 use Contao\MemberModel;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
+use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 
 class TokenLogin extends Controller
 {
@@ -56,26 +58,31 @@ class TokenLogin extends Controller
     private $router;
 
     /**
+     * @var EventDispatcherInterface
+     */
+    private $dispatcher;
+
+    /**
      * CreateNewUserListener constructor.
      *
-     * @param UserProviderInterface $userProvider The user provider.
-     * @param TokenStorageInterface $tokenStorage The token storage.
-     * @param Session               $session      The session.
-     * @param Connection            $connection   The database connection.
-     * @param UrlGenerator          $router       The Contao url generator.
+     * @param UserProviderInterface    $userProvider The user provider.
+     * @param TokenStorageInterface    $tokenStorage The token storage.
+     * @param Connection               $connection   The database connection.
+     * @param UrlGenerator             $router       The Contao url generator.
+     * @param EventDispatcherInterface $dispatcher   The event dispatcher.
      */
     public function __construct(
         UserProviderInterface $userProvider,
         TokenStorageInterface $tokenStorage,
-        Session $session,
         Connection $connection,
-        UrlGenerator $router
+        UrlGenerator $router,
+        EventDispatcherInterface $dispatcher
     ) {
         $this->userProvider = $userProvider;
         $this->tokenStorage = $tokenStorage;
-        $this->session      = $session;
         $this->connection   = $connection;
         $this->router       = $router;
+        $this->dispatcher   = $dispatcher;
     }
 
     /**
@@ -102,12 +109,12 @@ class TokenLogin extends Controller
 
         $result = $statement->fetch(\PDO::FETCH_OBJ);
         if (false === $result) {
-            throw new AccessDeniedException('Token not found or expired: '.$token);
+            throw new AccessDeniedException('Token not found or expired: ' . $token);
         }
 
         $member = MemberModel::findByPk($result->member);
         if (null === $member) {
-            throw new PageNotFoundException();
+            throw new PageNotFoundException('We don\'t know who you are :-(');
         }
 
         // Invalidate token
@@ -118,11 +125,17 @@ class TokenLogin extends Controller
             ->execute();
 
         // Authenticate user
-        $user = $this->userProvider->loadUserByUsername($member->username);
+        try {
+            $user = $this->userProvider->loadUserByUsername($member->username);
+        } catch (UsernameNotFoundException $exception) {
+            throw new PageNotFoundException('We don\'t know who you are :-(');
+        }
 
-        $usernamePasswordToken = new UsernamePasswordToken($user, null, 'main', $user->getRoles());
+        $usernamePasswordToken = new UsernamePasswordToken($user, null, 'frontend', $user->getRoles());
         $this->tokenStorage->setToken($usernamePasswordToken);
-        $this->session->set('_security_main', serialize($usernamePasswordToken));
+
+        $event = new InteractiveLoginEvent($request, $usernamePasswordToken);
+        $this->dispatcher->dispatch('security.interactive_login', $event);
 
         $url = $this->router->generate($result->jumpTo ?: 'index');
 

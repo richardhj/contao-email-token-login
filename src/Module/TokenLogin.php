@@ -14,19 +14,18 @@
 namespace Richardhj\ContaoEmailTokenLoginBundle\Module;
 
 
-use Contao\BackendTemplate;
+use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
 use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
 use Contao\FrontendUser;
 use Contao\MemberModel;
-use Contao\Module;
 use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
-use Contao\System;
+use Contao\Template;
 use Doctrine\DBAL\Connection;
 use NotificationCenter\Model\Notification;
-use Patchwork\Utf8;
-use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
@@ -34,7 +33,7 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\Logout\LogoutUrlGenerator;
 use Symfony\Component\Translation\TranslatorInterface;
 
-class TokenLogin extends Module
+class TokenLogin extends AbstractFrontendModuleController
 {
     /**
      * @var TokenChecker
@@ -45,11 +44,6 @@ class TokenLogin extends Module
      * @var LogoutUrlGenerator
      */
     private $logoutUrlGenerator;
-
-    /**
-     * @var RequestStack
-     */
-    private $requestStack;
 
     /**
      * @var AuthenticationUtils
@@ -79,115 +73,91 @@ class TokenLogin extends Module
     /**
      * TokenLogin constructor.
      *
-     * @param ModuleModel $module
-     * @param string      $column
+     * @param TokenChecker            $tokenChecker
+     * @param LogoutUrlGenerator      $logoutUrlGenerator
+     * @param AuthenticationUtils     $authenticationUtils
+     * @param Connection              $connection
+     * @param TokenGeneratorInterface $tokenGenerator
+     * @param RouterInterface         $router
+     * @param TranslatorInterface     $translator
      */
-    public function __construct(ModuleModel $module, string $column)
-    {
-        parent::__construct($module, $column);
-
-        $this->strTemplate = 'mod_login_email_token';
-
-        $this->tokenChecker        = System::getContainer()->get('contao.security.token_checker');
-        $this->logoutUrlGenerator  = System::getContainer()->get('security.logout_url_generator');
-        $this->requestStack        = System::getContainer()->get('request_stack');
-        $this->authenticationUtils = System::getContainer()->get('security.authentication_utils');
-        $this->connection          = System::getContainer()->get('database_connection');
-        $this->tokenGenerator      = System::getContainer()->get('security.csrf.token_generator');
-        $this->router              = System::getContainer()->get('router');
-        $this->translator          = System::getContainer()->get('translator');
+    public function __construct(
+        TokenChecker $tokenChecker,
+        LogoutUrlGenerator $logoutUrlGenerator,
+        AuthenticationUtils $authenticationUtils,
+        Connection $connection,
+        TokenGeneratorInterface $tokenGenerator,
+        RouterInterface $router,
+        TranslatorInterface $translator
+    ) {
+        $this->tokenChecker        = $tokenChecker;
+        $this->logoutUrlGenerator  = $logoutUrlGenerator;
+        $this->authenticationUtils = $authenticationUtils;
+        $this->connection          = $connection;
+        $this->tokenGenerator      = $tokenGenerator;
+        $this->router              = $router;
+        $this->translator          = $translator;
     }
 
     /**
-     * Display a login form
+     * Generate the response.
      *
-     * @return string
-     */
-    public function generate(): string
-    {
-        if ('BE' === TL_MODE) {
-            /** @var BackendTemplate|object $objTemplate */
-            $objTemplate = new BackendTemplate('be_wildcard');
-
-            $objTemplate->wildcard = '### '.Utf8::strtoupper($this->translator->trans('FMD.login.0', [], 'contao_modules')).' ###';
-            $objTemplate->title    = $this->headline;
-            $objTemplate->id       = $this->id;
-            $objTemplate->link     = $this->name;
-            $objTemplate->href     = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id='.$this->id;
-
-            return $objTemplate->parse();
-        }
-
-//        if (!$_POST && $this->redirectBack && ($strReferer = $this->getReferer()) != \Environment::get('request')) {
-//            $_SESSION['LAST_PAGE_VISITED'] = $strReferer;
-//        }
-
-        return parent::generate();
-    }
-
-
-    /**
-     * Generate the module
+     * @param Template    $template
+     * @param ModuleModel $model
+     * @param Request     $request
      *
-     * @throws \Exception
+     * @return Response
      */
-    protected function compile(): void
+    protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         if ($this->tokenChecker->hasFrontendUser()) {
             /** @var PageModel $objPage */
             global $objPage;
 
-            $strRedirect = \Environment::get('base').\Environment::get('request');
+            $redirect = $request->getBaseUrl() . '/' . $request->getRequestUri();
 
             // Redirect to last page visited
-            if ($this->redirectBack && $_SESSION['LAST_PAGE_VISITED'] != '') {
-                $strRedirect = \Environment::get('base').$_SESSION['LAST_PAGE_VISITED'];
+            if ($model->redirectBack && $_SESSION['LAST_PAGE_VISITED']) {
+                $redirect = $request->getBaseUrl() . '/' . $_SESSION['LAST_PAGE_VISITED'];
             } // Redirect home if the page is protected
             elseif ($objPage->protected) {
-                $strRedirect = \Environment::get('base');
+                $redirect = $request->getBaseUrl();
             }
 
-            $this->Template->logout     = true;
-            $this->Template->formId     = 'tl_logout_'.$this->id;
-            $this->Template->slabel     = \StringUtil::specialchars($this->translator->trans('MSC.logout', [], 'contao_default'));
-            $this->Template->loggedInAs =
-                sprintf($this->translator->trans('MSC.loggedInAs', [], 'contao_default'), FrontendUser::getInstance()->username);
-            $this->Template->action     = $this->logoutUrlGenerator->getLogoutPath();
-            $this->Template->targetPath = \StringUtil::specialchars($strRedirect);
+            $template->logout     = true;
+            $template->formId     = 'tl_logout_' . $model->id;
+            $template->slabel     =
+                \StringUtil::specialchars($this->translator->trans('MSC.logout', [], 'contao_default'));
+            $template->loggedInAs =
+                sprintf(
+                    $this->translator->trans('MSC.loggedInAs', [], 'contao_default'),
+                    FrontendUser::getInstance()->username
+                );
+            $template->action     = $this->logoutUrlGenerator->getLogoutPath();
+            $template->targetPath = \StringUtil::specialchars($redirect);
 
             if (FrontendUser::getInstance()->lastLogin > 0) {
-                $this->Template->lastLogin = sprintf(
+                $template->lastLogin = sprintf(
                     $this->translator->trans('MSC.lastLogin.1', [], 'contao_default'),
                     \Date::parse($objPage->datimFormat, FrontendUser::getInstance()->lastLogin)
                 );
             }
 
-            return;
+            return Response::create($template->parse());
         }
 
-        $request = $this->requestStack->getMasterRequest();
-
         if (0 !== $request->request->count()) {
-
-
             $member = MemberModel::findByUsername($request->request->get('username'));
             if (null === $member) {
-                $this->Template->hasError = true;
-                $this->Template->message  = $this->translator->trans('ERR.invalidLogin', [], 'contao_default');;
+                $template->hasError = true;
+                $template->message  = $this->translator->trans('ERR.invalidLogin', [], 'contao_default');;
             } else {
-
-//            $blnRedirectBack = false;
-//
-//            // Redirect to the last page visited
-//            if ($this->redirectBack && $_SESSION['LAST_PAGE_VISITED'] != '') {
-//                $blnRedirectBack = true;
-//                $strRedirect     = $_SESSION['LAST_PAGE_VISITED'];
-//            } // Redirect to the jumpTo page
-//            elseif ($this->jumpTo && ($objTarget = $this->objModel->getRelated('jumpTo')) instanceof PageModel) {
-                $objTarget = $this->objModel->getRelated('jumpTo');
-                $jumpTo    = ($objTarget instanceof PageModel) ? $objTarget->id : 0;
-//            }
-
+                try {
+                    $objTarget = $model->getRelated('jumpTo');
+                    $jumpTo    = ($objTarget instanceof PageModel) ? $objTarget->id : 0;
+                } catch (\Exception $e) {
+                    $jumpTo = 0;
+                }
 
                 // Generate token
                 $token = $this->tokenGenerator->generateToken();
@@ -219,29 +189,34 @@ class TokenLogin extends Module
                         UrlGeneratorInterface::ABSOLUTE_URL
                     ),
                 ];
+
                 foreach ($member->row() as $field => $value) {
-                    $notificationTokens['member_'.$field] = $value;
+                    $notificationTokens['member_' . $field] = $value;
                 }
 
-                $notification = Notification::findByPk($this->nc_notification);
+                /** @var Notification $notification */
+                $notification = Notification::findByPk($model->nc_notification);
                 if (null !== $notification) {
                     $notification->send($notificationTokens);
 
-                    $this->Template->doNotShowForm = true;
-                    $this->Template->message       =
+                    $template->doNotShowForm = true;
+                    $template->message       =
                         $this->translator->trans('MSC.token_login.form_success', [], 'contao_default');
                 } else {
-                    $this->Template->hasError = true;
-                    $this->Template->message  =
+                    $template->hasError = true;
+                    $template->message  =
                         $this->translator->trans('MSC.token_login.form_error', [], 'contao_default');
                 }
             }
         }
 
-        $this->Template->username = $this->translator->trans('MSC.username', [], 'contao_default');
-        $this->Template->action   = $request->getRequestUri();
-        $this->Template->slabel   = StringUtil::specialchars($this->translator->trans('MSC.login', [], 'contao_default'));
-        $this->Template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
-        $this->Template->formId   = 'tl_login_'.$this->id;
+        $template->username = $this->translator->trans('MSC.username', [], 'contao_default');
+        $template->action   = $request->getRequestUri();
+        $template->slabel   =
+            StringUtil::specialchars($this->translator->trans('MSC.login', [], 'contao_default'));
+        $template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
+        $template->formId   = 'tl_login_' . $model->id;
+
+        return Response::create($template->parse());
     }
 }

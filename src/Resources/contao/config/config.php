@@ -11,14 +11,7 @@
  * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
  */
 
-use Richardhj\ContaoEmailTokenLoginBundle\Module\TokenLogin;
 
-
-$GLOBALS['FE_MOD']['user']['token_login'] = TokenLogin::class;
-
-/**
- * Notification Center Notification Types
- */
 $GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE'] = array_merge_recursive(
     (array)$GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE'],
     [

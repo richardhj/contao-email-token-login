@@ -4,6 +4,22 @@ services:
         arguments:
             - '@contao.security.frontend_user_provider'
             - '@security.token_storage'
-            - '@session'
             - '@database_connection'
             - '@contao.routing.url_generator'
+            - '@event_dispatcher'
+
+    richardhj.contao_email_token_login.module.token_login:
+        class: Richardhj\ContaoEmailTokenLoginBundle\Module\TokenLogin
+        public: true
+        calls:
+            - [setContainer, ['@service_container']]
+        tags:
+            - { name: contao.frontend_module, type: token_login, category: user}
+        arguments:
+            - '@contao.security.token_checker'
+            - '@security.logout_url_generator'
+            - '@security.authentication_utils'
+            - '@database_connection'
+            - '@security.csrf.token_generator'
+            - '@router'
+            - '@translator'
