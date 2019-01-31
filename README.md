@@ -9,7 +9,7 @@ The login form just asks for the username (or email if mailusername is installed
 
 Klarna is using this approach as well:
 
-![img-klarna]
+<img width="508" src="https://user-images.githubusercontent.com/1284725/52039660-62a53780-2535-11e9-86b0-ccc2dbc7afe5.png">
 
 ## Configuration:
 
@@ -19,6 +19,5 @@ Klarna is using this approach as well:
 
 [ico-version]: https://img.shields.io/packagist/v/richardhj/contao-email-token-login.svg?style=flat-square
 [ico-license]: https://img.shields.io/badge/license-LGPL-brightgreen.svg?style=flat-square
-[img-klarna]: https://user-images.githubusercontent.com/1284725/52039660-62a53780-2535-11e9-86b0-ccc2dbc7afe5.png
 
 [link-packagist]: https://packagist.org/packages/richardhj/contao-email-token-login
