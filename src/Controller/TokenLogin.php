@@ -19,82 +19,53 @@ use Contao\CoreBundle\Exception\RedirectResponseException;
 use Contao\CoreBundle\Routing\UrlGenerator;
 use Contao\MemberModel;
 use Doctrine\DBAL\Connection;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
+use Symfony\Component\Translation\TranslatorInterface;
+use Twig\Environment as TwigEnvironment;
 
-class TokenLogin extends Controller
+class TokenLogin extends AbstractController
 {
 
-    /**
-     * @var UserProviderInterface
-     */
     private $userProvider;
 
-    /**
-     * @var TokenStorageInterface
-     */
     private $tokenStorage;
 
-    /**
-     * @var Session
-     */
-    private $session;
-
-    /**
-     * @var Connection
-     */
     private $connection;
 
-    /**
-     * @var UrlGenerator
-     */
     private $router;
 
-    /**
-     * @var EventDispatcherInterface
-     */
     private $dispatcher;
 
-    /**
-     * CreateNewUserListener constructor.
-     *
-     * @param UserProviderInterface    $userProvider The user provider.
-     * @param TokenStorageInterface    $tokenStorage The token storage.
-     * @param Connection               $connection   The database connection.
-     * @param UrlGenerator             $router       The Contao url generator.
-     * @param EventDispatcherInterface $dispatcher   The event dispatcher.
-     */
+    private $twig;
+
+    private $translator;
+
     public function __construct(
         UserProviderInterface $userProvider,
         TokenStorageInterface $tokenStorage,
         Connection $connection,
         UrlGenerator $router,
-        EventDispatcherInterface $dispatcher
+        EventDispatcherInterface $dispatcher,
+        TwigEnvironment $twig,
+        TranslatorInterface $translator
     ) {
         $this->userProvider = $userProvider;
         $this->tokenStorage = $tokenStorage;
         $this->connection   = $connection;
         $this->router       = $router;
         $this->dispatcher   = $dispatcher;
+        $this->twig         = $twig;
+        $this->translator   = $translator;
     }
 
-    /**
-     * @param string  $token
-     * @param Request $request
-     *
-     * @throws \InvalidArgumentException
-     * @throws AccessDeniedException
-     * @throws RedirectResponseException
-     * @throws PageNotFoundException
-     * @throws UsernameNotFoundException
-     */
     public function __invoke(string $token, Request $request)
     {
         $statement = $this->connection->createQueryBuilder()
@@ -117,6 +88,22 @@ class TokenLogin extends Controller
             throw new PageNotFoundException('We don\'t know who you are :-(');
         }
 
+        if (!$request->isMethod('POST')) {
+            // Only proceed on POST requests. On GET, show a <form> to gather a POST request. See #3
+
+            return Response::create(
+                $this->twig->render(
+                    '@RichardhjContaoEmailTokenLogin/login_entrypoint.html.twig',
+                    [
+                        'loginBT'       => $this->translator->trans('MSC.loginBT', [], 'contao_default'),
+                        'form_id'       => 'login' . substr($token, 0, 4),
+                        'form_action'   => $request->getRequestUri(),
+                        'request_token' => REQUEST_TOKEN
+                    ]
+                )
+            );
+        }
+
         // Invalidate token
         $this->connection->createQueryBuilder()
             ->delete('tl_member_login_token')
@@ -135,7 +122,7 @@ class TokenLogin extends Controller
         $this->tokenStorage->setToken($usernamePasswordToken);
 
         $event = new InteractiveLoginEvent($request, $usernamePasswordToken);
-        $this->dispatcher->dispatch('security.interactive_login', $event);
+        $this->dispatcher->dispatch($event);
 
         $url = $this->router->generate($result->jumpTo ?: 'index');
 

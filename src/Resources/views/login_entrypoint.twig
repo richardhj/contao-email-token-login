@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sie werden eingeloggt</title>
+</head>
+<body>
+<form id="{{ form_id }}" action="{{ form_action }}" method="post">
+    <noscript>
+        <button type="submit">{{ loginBT }}</button>
+    </noscript>
+</form>
+<script>
+    document.getElementById('{{ form_id }}').submit();
+</script>
+</body>
+</html>

@@ -7,6 +7,8 @@ services:
             - '@database_connection'
             - '@contao.routing.url_generator'
             - '@event_dispatcher'
+            - '@twig'
+            - '@translator'
         tags: ['controller.service_arguments']
 
     richardhj.contao_email_token_login.module.token_login:

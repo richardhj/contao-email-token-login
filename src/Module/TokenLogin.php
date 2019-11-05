@@ -35,52 +35,23 @@ use Symfony\Component\Translation\TranslatorInterface;
 
 class TokenLogin extends AbstractFrontendModuleController
 {
-    /**
-     * @var TokenChecker
-     */
+
     private $tokenChecker;
 
-    /**
-     * @var LogoutUrlGenerator
-     */
     private $logoutUrlGenerator;
 
-    /**
-     * @var AuthenticationUtils
-     */
     private $authenticationUtils;
 
-    /**
-     * @var Connection
-     */
     private $connection;
 
-    /**
-     * @var TokenGeneratorInterface
-     */
     private $tokenGenerator;
 
-    /**
-     * @var RouterInterface
-     */
     private $router;
 
-    /**
-     * @var TranslatorInterface
-     */
     private $translator;
 
-    /**
-     * TokenLogin constructor.
-     *
-     * @param TokenChecker            $tokenChecker
-     * @param LogoutUrlGenerator      $logoutUrlGenerator
-     * @param AuthenticationUtils     $authenticationUtils
-     * @param Connection              $connection
-     * @param TokenGeneratorInterface $tokenGenerator
-     * @param RouterInterface         $router
-     * @param TranslatorInterface     $translator
-     */
+    private $targetPath = '';
+
     public function __construct(
         TokenChecker $tokenChecker,
         LogoutUrlGenerator $logoutUrlGenerator,
@@ -99,47 +70,38 @@ class TokenLogin extends AbstractFrontendModuleController
         $this->translator          = $translator;
     }
 
-    /**
-     * Generate the response.
-     *
-     * @param Template    $template
-     * @param ModuleModel $model
-     * @param Request     $request
-     *
-     * @return Response
-     */
     protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
     {
         if ($this->tokenChecker->hasFrontendUser()) {
-            /** @var PageModel $objPage */
-            global $objPage;
+            /** @var PageModel $pageModel */
+            $pageModel = $request->attributes->get('pageModel');
+            $redirect  = $request->getBaseUrl() . '/' . $request->getRequestUri();
 
-            $redirect = $request->getBaseUrl() . '/' . $request->getRequestUri();
+            if ($_POST) {
+                $this->targetPath = (string) $request->request->get('_target_path');
+            } elseif ($model->redirectBack && ($referer = $request->query->get('referer'))) {
+                $this->targetPath = $request->getBaseUrl() . '/' . base64_decode($referer, true);
+            }
 
-            // Redirect to last page visited
-            if ($model->redirectBack && $_SESSION['LAST_PAGE_VISITED']) {
-                $redirect = $request->getBaseUrl() . '/' . $_SESSION['LAST_PAGE_VISITED'];
-            } // Redirect home if the page is protected
-            elseif ($objPage->protected) {
+            if ($model->redirectBack && $this->targetPath) {
+                // Redirect to last page visited
+                $redirect = $this->targetPath;
+            } elseif ($pageModel->protected) {
+                // Redirect home if the page is protected
                 $redirect = $request->getBaseUrl();
             }
 
             $template->logout     = true;
             $template->formId     = 'tl_logout_' . $model->id;
-            $template->slabel     =
-                \StringUtil::specialchars($this->translator->trans('MSC.logout', [], 'contao_default'));
-            $template->loggedInAs =
-                sprintf(
-                    $this->translator->trans('MSC.loggedInAs', [], 'contao_default'),
-                    FrontendUser::getInstance()->username
-                );
+            $template->slabel     = \StringUtil::specialchars($this->translate('MSC.logout'));
+            $template->loggedInAs = sprintf($this->translate('MSC.loggedInAs'), FrontendUser::getInstance()->username);
             $template->action     = $this->logoutUrlGenerator->getLogoutPath();
             $template->targetPath = \StringUtil::specialchars($redirect);
 
             if (FrontendUser::getInstance()->lastLogin > 0) {
                 $template->lastLogin = sprintf(
-                    $this->translator->trans('MSC.lastLogin.1', [], 'contao_default'),
-                    \Date::parse($objPage->datimFormat, FrontendUser::getInstance()->lastLogin)
+                    $this->translate('MSC.lastLogin.1'),
+                    \Date::parse($pageModel->datimFormat, FrontendUser::getInstance()->lastLogin)
                 );
             }
 
@@ -150,7 +112,7 @@ class TokenLogin extends AbstractFrontendModuleController
             $member = MemberModel::findByUsername($request->request->get('username'));
             if (null === $member) {
                 $template->hasError = true;
-                $template->message  = $this->translator->trans('ERR.invalidLogin', [], 'contao_default');;
+                $template->message  = $this->translate('ERR.invalidLogin');
             } else {
                 try {
                     $objTarget = $model->getRelated('jumpTo');
@@ -200,23 +162,25 @@ class TokenLogin extends AbstractFrontendModuleController
                     $notification->send($notificationTokens);
 
                     $template->doNotShowForm = true;
-                    $template->message       =
-                        $this->translator->trans('MSC.token_login.form_success', [], 'contao_default');
+                    $template->message       = $this->translate('MSC.token_login.form_success');
                 } else {
                     $template->hasError = true;
-                    $template->message  =
-                        $this->translator->trans('MSC.token_login.form_error', [], 'contao_default');
+                    $template->message  = $this->translate('MSC.token_login.form_error');
                 }
             }
         }
 
-        $template->username = $this->translator->trans('MSC.username', [], 'contao_default');
+        $template->username = $this->translate('MSC.username');
         $template->action   = $request->getRequestUri();
-        $template->slabel   =
-            StringUtil::specialchars($this->translator->trans('MSC.login', [], 'contao_default'));
+        $template->slabel   = StringUtil::specialchars($this->translate('MSC.login'));
         $template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
         $template->formId   = 'tl_login_' . $model->id;
 
         return Response::create($template->parse());
+    }
+
+    private function translate(string $key): string
+    {
+        return $this->translator->trans($key, [], 'contao_default');
     }
 }
