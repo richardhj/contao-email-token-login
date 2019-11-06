@@ -9,7 +9,10 @@ services:
             - '@event_dispatcher'
             - '@twig'
             - '@translator'
-        tags: ['controller.service_arguments']
+            - '@contao.security.authentication_success_handler'
+            - '@logger'
+            - '@contao.security.user_checker'
+        tags: ['controller.service_arguments', { name: 'monolog.logger', channel: 'richardhj_token_login' }]
 
     richardhj.contao_email_token_login.module.token_login:
         class: Richardhj\ContaoEmailTokenLoginBundle\Module\TokenLogin
