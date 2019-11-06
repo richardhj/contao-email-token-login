@@ -98,7 +98,6 @@ class TokenLogin extends AbstractController
                         'loginBT'       => $this->translator->trans('MSC.loginBT', [], 'contao_default'),
                         'form_id'       => 'login' . substr($token, 0, 4),
                         'form_action'   => $request->getRequestUri(),
-                        'request_token' => REQUEST_TOKEN
                     ]
                 )
             );

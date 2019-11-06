@@ -26,3 +26,4 @@ services:
             - '@security.csrf.token_generator'
             - '@router'
             - '@translator'
+            - '@twig'
