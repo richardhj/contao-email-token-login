@@ -122,14 +122,8 @@ class TokenLogin extends AbstractController
             );
         }
 
-        // Invalidate token
-        $this->connection->createQueryBuilder()
-            ->delete('tl_member_login_token')
-            ->where('id=:id')
-            ->setParameter('id', $result->id)
-            ->execute();
+        $this->invalidateToken($result->id);
 
-        // Authenticate user
         $this->loginUser($member->username, $request);
 
         $url = $this->router->generate($result->jumpTo ?: 'index');
@@ -146,14 +140,15 @@ class TokenLogin extends AbstractController
         }
 
         if (!$user instanceof FrontendUser) {
-            return;
+            throw new AccessDeniedException('Not a frontend user');
         }
 
         try {
             $this->userChecker->checkPreAuth($user);
             $this->userChecker->checkPostAuth($user);
         } catch (AccountStatusException $e) {
-            return;
+            // i.e. account disabled
+            throw new AccessDeniedException('Authentication checks failed');
         }
 
         $usernamePasswordToken = new UsernamePasswordToken($user, null, 'frontend', $user->getRoles());
@@ -167,5 +162,14 @@ class TokenLogin extends AbstractController
         );
 
         $this->authenticationSuccessHandler->onAuthenticationSuccess($request, $usernamePasswordToken);
+    }
+
+    private function invalidateToken(int $tokenId): void
+    {
+        $this->connection->createQueryBuilder()
+            ->delete('tl_member_login_token')
+            ->where('id=:id')
+            ->setParameter('id', $tokenId)
+            ->execute();
     }
 }
