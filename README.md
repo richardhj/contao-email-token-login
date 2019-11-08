@@ -14,8 +14,12 @@ Klarna is using this approach as well:
 ## Configuration:
 
 1. Create a new notification of type "token login".
-2. Place at least the token `##link##` in the message.
+2. Place the token `##link##` in the message. For html emails, you can additionally add the token `##login_form_html##`.
 3. Create a module of type "token login". Select the notification, select a jumpTo page, place the module somewhere on the website.
+
+## Changelog
+
+Please consult the [CHANGELOG](CHANGELOG.md).
 
 [ico-version]: https://img.shields.io/packagist/v/richardhj/contao-email-token-login.svg?style=flat-square
 [ico-license]: https://img.shields.io/badge/license-LGPL-brightgreen.svg?style=flat-square
