@@ -5,7 +5,7 @@
 
 Alternative login form, in case your members don't necessarily have nor need a password.
 
-The login form just asks for the username (or email if mailusername is installed). The user submits the form and receives an email (notifications are managed by notification_center). The user gets logged in when they hit the login in link within the email. The login link expires after 2 hours and immediately logs in the user.
+The login form just asks for the username (or email if [mailusername](https://github.com/terminal42/contao-mailusername) is installed). The user submits the form and receives an email (notifications are managed by [notification center](https://github.com/terminal42/contao-notification_center)). The user gets logged in when they hit the login in link within the email. The login link expires after 2 hours and immediately logs in the user.
 
 Klarna is using this approach as well:
 
