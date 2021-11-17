@@ -166,7 +166,7 @@ class TokenLogin extends AbstractFrontendModuleController
         $template->action   = $request->getRequestUri();
         $template->slabel   = $this->translate('MSC.login');
         $template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
-        $template->formId   = 'tl_login_' . $model->id;
+        $template->formId   = 't_login_' . $model->id;
 
         return Response::create($template->parse());
     }
