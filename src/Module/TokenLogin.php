@@ -119,13 +119,6 @@ class TokenLogin extends AbstractFrontendModuleController
                 $template->hasError = true;
                 $template->message  = $this->translate('ERR.invalidLogin');
             } else {
-                try {
-                    $target = $model->getRelated('jumpTo');
-                    $jumpTo = ($target instanceof PageModel) ? $target->id : 0;
-                } catch (\Exception $e) {
-                    $jumpTo = 0;
-                }
-
                 // Generate token
                 $token = $this->tokenGenerator->generateToken();
                 $this->connection->createQueryBuilder()
@@ -143,7 +136,7 @@ class TokenLogin extends AbstractFrontendModuleController
                     ->setParameter(1, strtotime('+2 hours'))
                     ->setParameter(2, $member->id)
                     ->setParameter(3, $token)
-                    ->setParameter(4, $jumpTo)
+                    ->setParameter(4, $request->request->get('_target_path'))
                     ->execute();
 
                 // Send notification

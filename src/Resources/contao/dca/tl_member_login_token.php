@@ -39,7 +39,7 @@ $GLOBALS['TL_DCA']['tl_member_login_token'] = [
             'sql' => "int(10) unsigned NOT NULL default '0'",
         ],
         'jumpTo' => [
-            'sql' => "int(10) unsigned NOT NULL default '0'",
+            'sql' => "varchar(255) NOT NULL default ''",
         ]
     ],
 ];

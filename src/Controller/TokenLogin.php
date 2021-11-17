@@ -82,11 +82,10 @@ class TokenLogin extends AbstractController
     public function __invoke(string $token, Request $request)
     {
         $statement = $this->connection->createQueryBuilder()
-            ->select('t.id AS id', 't.member AS member', 'p.alias AS jumpTo')
+            ->select('t.id AS id', 't.member AS member', 't.jumpTo AS jumpTo')
             ->from('tl_member_login_token', 't')
             ->where('t.token =:token')
             ->andWhere('t.expires >=:time')
-            ->leftJoin('t', 'tl_page', 'p', 't.jumpTo = p.id')
             ->setParameter('token', $token)
             ->setParameter('time', time())
             ->execute();
@@ -118,7 +117,7 @@ class TokenLogin extends AbstractController
 
         $this->invalidateToken($result->id);
 
-        $this->loginUser($member->username, $request);
+        $request->request->set('_target_path', $result->jumpTo);
 
         return $this->loginUser($member->username, $request);
     }
