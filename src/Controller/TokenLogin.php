@@ -15,9 +15,7 @@ namespace Richardhj\ContaoEmailTokenLoginBundle\Controller;
 
 use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\CoreBundle\Exception\PageNotFoundException;
-use Contao\CoreBundle\Exception\RedirectResponseException;
 use Contao\CoreBundle\Monolog\ContaoContext;
-use Contao\CoreBundle\Routing\UrlGenerator;
 use Contao\FrontendUser;
 use Contao\MemberModel;
 use Doctrine\DBAL\Connection;
@@ -34,7 +32,7 @@ use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerInterface;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
-use Symfony\Component\Translation\TranslatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 use Symfony\Component\Security\Core\User\UserCheckerInterface;
 
@@ -46,8 +44,6 @@ class TokenLogin extends AbstractController
     private $tokenStorage;
 
     private $connection;
-
-    private $router;
 
     private $dispatcher;
 
@@ -65,7 +61,6 @@ class TokenLogin extends AbstractController
         UserProviderInterface $userProvider,
         TokenStorageInterface $tokenStorage,
         Connection $connection,
-        UrlGenerator $router,
         EventDispatcherInterface $dispatcher,
         TwigEnvironment $twig,
         TranslatorInterface $translator,
@@ -76,7 +71,6 @@ class TokenLogin extends AbstractController
         $this->userProvider                 = $userProvider;
         $this->tokenStorage                 = $tokenStorage;
         $this->connection                   = $connection;
-        $this->router                       = $router;
         $this->dispatcher                   = $dispatcher;
         $this->twig                         = $twig;
         $this->translator                   = $translator;
@@ -126,12 +120,10 @@ class TokenLogin extends AbstractController
 
         $this->loginUser($member->username, $request);
 
-        $url = $this->router->generate($result->jumpTo ?: 'index');
-
-        throw new RedirectResponseException($url);
+        return $this->loginUser($member->username, $request);
     }
 
-    private function loginUser(string $username, Request $request): void
+    private function loginUser(string $username, Request $request): Response
     {
         try {
             $user = $this->userProvider->loadUserByUsername($username);
@@ -161,7 +153,7 @@ class TokenLogin extends AbstractController
             ['contao' => new ContaoContext(__METHOD__, TL_ACCESS)]
         );
 
-        $this->authenticationSuccessHandler->onAuthenticationSuccess($request, $usernamePasswordToken);
+        return $this->authenticationSuccessHandler->onAuthenticationSuccess($request, $usernamePasswordToken);
     }
 
     private function invalidateToken(int $tokenId): void
