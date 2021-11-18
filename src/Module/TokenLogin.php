@@ -31,7 +31,7 @@ use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 use Symfony\Component\Security\Http\Logout\LogoutUrlGenerator;
-use Symfony\Component\Translation\TranslatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment as TwigEnvironment;
 
 class TokenLogin extends AbstractFrontendModuleController
@@ -119,13 +119,6 @@ class TokenLogin extends AbstractFrontendModuleController
                 $template->hasError = true;
                 $template->message  = $this->translate('ERR.invalidLogin');
             } else {
-                try {
-                    $target = $model->getRelated('jumpTo');
-                    $jumpTo = ($target instanceof PageModel) ? $target->id : 0;
-                } catch (\Exception $e) {
-                    $jumpTo = 0;
-                }
-
                 // Generate token
                 $token = $this->tokenGenerator->generateToken();
                 $this->connection->createQueryBuilder()
@@ -143,7 +136,7 @@ class TokenLogin extends AbstractFrontendModuleController
                     ->setParameter(1, strtotime('+2 hours'))
                     ->setParameter(2, $member->id)
                     ->setParameter(3, $token)
-                    ->setParameter(4, $jumpTo)
+                    ->setParameter(4, $request->request->get('_target_path'))
                     ->execute();
 
                 // Send notification
@@ -166,7 +159,12 @@ class TokenLogin extends AbstractFrontendModuleController
         $template->action   = $request->getRequestUri();
         $template->slabel   = $this->translate('MSC.login');
         $template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
-        $template->formId   = 'tl_login_' . $model->id;
+        $template->formId   = 't_login_' . $model->id;
+
+        $target = $model->getRelated('jumpTo');
+        $targetPath = $target instanceof PageModel ? $target->getFrontendUrl() : $request->getRequestUri();
+
+        $template->targetPath = base64_encode($targetPath);
 
         return Response::create($template->parse());
     }

@@ -1,11 +1,12 @@
 services:
     richardhj.contao_email_token_login.controller.token_login:
         class: Richardhj\ContaoEmailTokenLoginBundle\Controller\TokenLogin
+        calls:
+            - [setContainer, ['@service_container']]
         arguments:
             - '@contao.security.frontend_user_provider'
             - '@security.token_storage'
             - '@database_connection'
-            - '@contao.routing.url_generator'
             - '@event_dispatcher'
             - '@twig'
             - '@translator'

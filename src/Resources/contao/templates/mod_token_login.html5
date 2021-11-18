@@ -19,6 +19,7 @@
       <?php endif; ?>
       <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formId ?>">
       <input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
+      <input type="hidden" name="_target_path" value="<?= $this->targetPath ?>">
       <?php if ($this->logout): ?>
         <p class="login_info"><?= $this->loggedInAs ?><br><?= $this->lastLogin ?></p>
       <?php else: ?>
