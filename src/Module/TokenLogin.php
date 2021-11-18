@@ -161,6 +161,11 @@ class TokenLogin extends AbstractFrontendModuleController
         $template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
         $template->formId   = 't_login_' . $model->id;
 
+        $target = $model->getRelated('jumpTo');
+        $targetPath = $target instanceof PageModel ? $target->getFrontendUrl() : $request->getRequestUri();
+
+        $template->targetPath = base64_encode($targetPath);
+
         return Response::create($template->parse());
     }
 
