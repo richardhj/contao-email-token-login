@@ -26,6 +26,7 @@ use Contao\StringUtil;
 use Contao\Template;
 use Doctrine\DBAL\Connection;
 use NotificationCenter\Model\Notification;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -154,7 +155,7 @@ class TokenLogin extends AbstractFrontendModuleController
                 }
             }
 
-            Controller::reload();
+            return new RedirectResponse($request->getUri());
         }
 
         $template->username = $this->translate('MSC.username');
