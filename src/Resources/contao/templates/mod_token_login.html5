@@ -6,41 +6,37 @@
     <<?= $this->hl ?>><?= $this->headline ?></<?= $this->hl ?>>
   <?php endif; ?>
 
-  <?php if ($this->doNotShowForm): ?>
-    <?php if ($this->message): ?>
-      <p><?= $this->message ?></p>
-    <?php endif; ?>
-  <?php else: ?>
+  <?php if ($this->message): ?>
+    <?= $this->message ?>
+  <?php endif; ?>
 
-  <form<?php if ($this->action): ?> action="<?= $this->action ?>"<?php endif; ?> id="<?= $this->formId ?>" method="post">
-    <div class="formbody">
-      <?php if ($this->message): ?>
-        <p class="error"><?= $this->message ?></p>
-      <?php endif; ?>
-      <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formId ?>">
-      <input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
-      <input type="hidden" name="_target_path" value="<?= $this->targetPath ?>">
-      <?php if ($this->logout): ?>
-        <p class="login_info"><?= $this->loggedInAs ?><br><?= $this->lastLogin ?></p>
-      <?php else: ?>
-        <div class="widget widget-text">
-          <label for="username"><?= $this->username ?></label>
-          <input type="text" name="username" id="username" class="text" value="<?= $this->value ?>" required><br>
-        </div>
-        <?php if ($this->autologin): ?>
-          <div class="widget widget-checkbox">
-            <fieldset class="checkbox_container">
-              <span><input type="checkbox" name="autologin" id="autologin" value="1" class="checkbox"> <label for="autologin"><?= $this->autoLabel ?></label></span>
-            </fieldset>
+  <?php if (!$this->doNotShowForm): ?>
+    <form<?php if ($this->action): ?> action="<?= $this->action ?>"<?php endif; ?> id="<?= $this->formId ?>" method="post">
+      <div class="formbody">
+        <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formId ?>">
+        <input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
+        <input type="hidden" name="_target_path" value="<?= $this->targetPath ?>">
+        <?php if ($this->logout): ?>
+          <p class="login_info"><?= $this->loggedInAs ?><br><?= $this->lastLogin ?></p>
+        <?php else: ?>
+          <div class="widget widget-text">
+            <label for="username"><?= $this->username ?></label>
+            <input type="text" name="username" id="username" class="text" value="<?= $this->value ?>" required><br>
           </div>
+          <?php if ($this->autologin): ?>
+            <div class="widget widget-checkbox">
+              <fieldset class="checkbox_container">
+                <span><input type="checkbox" name="autologin" id="autologin" value="1" class="checkbox"> <label for="autologin"><?= $this->autoLabel ?></label></span>
+              </fieldset>
+            </div>
+          <?php endif; ?>
         <?php endif; ?>
-      <?php endif; ?>
-      <div class="widget widget-submit">
-        <button type="submit" class="submit"><?= $this->slabel ?></button>
+        <div class="widget widget-submit">
+          <button type="submit" class="submit"><?= $this->slabel ?></button>
+        </div>
       </div>
-    </div>
-  </form>
-  <?php endif ?>
+    </form>
+  <?php endif; ?>
 
 </div>
 <!-- indexer::continue -->

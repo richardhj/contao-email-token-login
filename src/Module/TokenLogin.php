@@ -14,16 +14,19 @@
 namespace Richardhj\ContaoEmailTokenLoginBundle\Module;
 
 
+use Contao\Controller;
 use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
 use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
 use Contao\FrontendUser;
 use Contao\MemberModel;
+use Contao\Message;
 use Contao\ModuleModel;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\Template;
 use Doctrine\DBAL\Connection;
 use NotificationCenter\Model\Notification;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -116,8 +119,7 @@ class TokenLogin extends AbstractFrontendModuleController
         if (0 !== $request->request->count()) {
             $member = MemberModel::findByUsername($request->request->get('username'));
             if (null === $member) {
-                $template->hasError = true;
-                $template->message  = $this->translate('ERR.invalidLogin');
+                Message::addError($this->translate('ERR.invalidLogin'), 'richardhj_token_login');
             } else {
                 // Generate token
                 $token = $this->tokenGenerator->generateToken();
@@ -147,12 +149,13 @@ class TokenLogin extends AbstractFrontendModuleController
                     $notification->send($notificationTokens);
 
                     $template->doNotShowForm = true;
-                    $template->message       = $this->translate('MSC.token_login.form_success');
+                    Message::addInfo($this->translate('MSC.token_login.form_success'), 'richardhj_token_login');
                 } else {
-                    $template->hasError = true;
-                    $template->message  = $this->translate('MSC.token_login.form_error');
+                    Message::addError($this->translate('MSC.token_login.form_error'), 'richardhj_token_login');
                 }
             }
+
+            return new RedirectResponse($request->getUri());
         }
 
         $template->username = $this->translate('MSC.username');
@@ -165,6 +168,10 @@ class TokenLogin extends AbstractFrontendModuleController
         $targetPath = $target instanceof PageModel ? $target->getFrontendUrl() : $request->getRequestUri();
 
         $template->targetPath = base64_encode($targetPath);
+
+        if (Message::hasMessages('richardhj_token_login')) {
+            $template->message = Message::generate('richardhj_token_login');
+        }
 
         return Response::create($template->parse());
     }
