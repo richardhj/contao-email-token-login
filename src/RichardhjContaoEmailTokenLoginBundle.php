@@ -1,14 +1,13 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * This file is part of richardhj/contao-email-token-login.
  *
- * Copyright (c) 2018-2018 Richard Henkenjohann
+ * Copyright (c) Richard Henkenjohann
  *
- * @package   richardhj/contao-email-token-login
- * @author    Richard Henkenjohann <richardhenkenjohann@googlemail.com>
- * @copyright 2018-2018 Richard Henkenjohann
- * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
+ * @license LGPL-3.0-or-later
  */
 
 namespace Richardhj\ContaoEmailTokenLoginBundle;
@@ -17,5 +16,4 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 class RichardhjContaoEmailTokenLoginBundle extends Bundle
 {
-
 }

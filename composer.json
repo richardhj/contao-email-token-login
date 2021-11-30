@@ -28,7 +28,8 @@
     "terminal42/notification_center": "^1.4"
   },
   "require-dev": {
-    "contao/manager-plugin": "^2.1"
+    "contao/manager-plugin": "^2.1",
+    "contao/easy-coding-standard": "^4.0"
   },
   "autoload": {
     "psr-4": {

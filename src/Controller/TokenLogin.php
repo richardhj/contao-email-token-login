@@ -1,14 +1,13 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * This file is part of richardhj/contao-email-token-login.
  *
- * Copyright (c) 2018-2018 Richard Henkenjohann
+ * Copyright (c) Richard Henkenjohann
  *
- * @package   richardhj/contao-email-token-login
- * @author    Richard Henkenjohann <richardhenkenjohann@googlemail.com>
- * @copyright 2018-2018 Richard Henkenjohann
- * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
+ * @license LGPL-3.0-or-later
  */
 
 namespace Richardhj\ContaoEmailTokenLoginBundle\Controller;
@@ -29,54 +28,33 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Exception\AccountStatusException;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
+use Symfony\Component\Security\Core\User\UserCheckerInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerInterface;
 use Symfony\Component\Security\Http\Event\InteractiveLoginEvent;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment as TwigEnvironment;
-use Symfony\Component\Security\Core\User\UserCheckerInterface;
 
 class TokenLogin extends AbstractController
 {
-
     private $userProvider;
-
     private $tokenStorage;
-
     private $connection;
-
     private $dispatcher;
-
-    private $twig;
-
     private $translator;
-
     private $authenticationSuccessHandler;
-
     private $logger;
-
     private $userChecker;
 
-    public function __construct(
-        UserProviderInterface $userProvider,
-        TokenStorageInterface $tokenStorage,
-        Connection $connection,
-        EventDispatcherInterface $dispatcher,
-        TwigEnvironment $twig,
-        TranslatorInterface $translator,
-        AuthenticationSuccessHandlerInterface $authenticationSuccessHandler,
-        LoggerInterface $logger,
-        UserCheckerInterface $userChecker
-    ) {
-        $this->userProvider                 = $userProvider;
-        $this->tokenStorage                 = $tokenStorage;
-        $this->connection                   = $connection;
-        $this->dispatcher                   = $dispatcher;
-        $this->twig                         = $twig;
-        $this->translator                   = $translator;
+    public function __construct(UserProviderInterface $userProvider, TokenStorageInterface $tokenStorage, Connection $connection, EventDispatcherInterface $dispatcher, TranslatorInterface $translator, AuthenticationSuccessHandlerInterface $authenticationSuccessHandler, LoggerInterface $logger, UserCheckerInterface $userChecker)
+    {
+        $this->userProvider = $userProvider;
+        $this->tokenStorage = $tokenStorage;
+        $this->connection = $connection;
+        $this->dispatcher = $dispatcher;
+        $this->translator = $translator;
         $this->authenticationSuccessHandler = $authenticationSuccessHandler;
-        $this->logger                       = $logger;
-        $this->userChecker                  = $userChecker;
+        $this->logger = $logger;
+        $this->userChecker = $userChecker;
     }
 
     public function __invoke(string $token, Request $request)
@@ -88,31 +66,28 @@ class TokenLogin extends AbstractController
             ->andWhere('t.expires >=:time')
             ->setParameter('token', $token)
             ->setParameter('time', time())
-            ->execute();
+            ->execute()
+        ;
 
         $result = $statement->fetch(\PDO::FETCH_OBJ);
+
         if (false === $result) {
-            throw new AccessDeniedException('Token not found or expired: ' . $token);
+            throw new AccessDeniedException('Token not found or expired: '.$token);
         }
 
         $member = MemberModel::findByPk($result->member);
+
         if (null === $member) {
             throw new PageNotFoundException('We don\'t know who you are :-(');
         }
 
+        // Only proceed on POST requests. On GET, show a <form> to gather a POST request. See #3
         if (!$request->isMethod('POST')) {
-            // Only proceed on POST requests. On GET, show a <form> to gather a POST request. See #3
-
-            return Response::create(
-                $this->twig->render(
-                    '@RichardhjContaoEmailTokenLogin/login_entrypoint.html.twig',
-                    [
-                        'loginBT'     => $this->translator->trans('MSC.loginBT', [], 'contao_default'),
-                        'form_id'     => 'login' . substr($token, 0, 4),
-                        'form_action' => $request->getRequestUri(),
-                    ]
-                )
-            );
+            return $this->render('@RichardhjContaoEmailTokenLogin/login_entrypoint.html.twig', [
+                'loginBT' => $this->translator->trans('MSC.loginBT', [], 'contao_default'),
+                'form_id' => 'login'.substr($token, 0, 4),
+                'form_action' => $request->getRequestUri(),
+            ]);
         }
 
         $this->invalidateToken($result->id);
@@ -146,11 +121,9 @@ class TokenLogin extends AbstractController
         $this->tokenStorage->setToken($usernamePasswordToken);
         $event = new InteractiveLoginEvent($request, $usernamePasswordToken);
         $this->dispatcher->dispatch($event);
-        $this->logger->log(
-            LogLevel::INFO,
-            'User "' . $username . '" was logged in automatically',
-            ['contao' => new ContaoContext(__METHOD__, TL_ACCESS)]
-        );
+        $this->logger->log(LogLevel::INFO, sprintf('User "%s" was logged in automatically', $username), [
+            'contao' => new ContaoContext(__METHOD__, TL_ACCESS),
+        ]);
 
         return $this->authenticationSuccessHandler->onAuthenticationSuccess($request, $usernamePasswordToken);
     }
@@ -161,6 +134,7 @@ class TokenLogin extends AbstractController
             ->delete('tl_member_login_token')
             ->where('id=:id')
             ->setParameter('id', $tokenId)
-            ->execute();
+            ->execute()
+        ;
     }
 }

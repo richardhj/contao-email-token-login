@@ -1,14 +1,13 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * This file is part of richardhj/contao-email-token-login.
  *
- * Copyright (c) 2018-2018 Richard Henkenjohann
+ * Copyright (c) Richard Henkenjohann
  *
- * @package   richardhj/contao-email-token-login
- * @author    Richard Henkenjohann <richardhenkenjohann@googlemail.com>
- * @copyright 2018-2018 Richard Henkenjohann
- * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
+ * @license LGPL-3.0-or-later
  */
 
 namespace Richardhj\ContaoEmailTokenLoginBundle\DependencyInjection;
@@ -23,14 +22,10 @@ use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
  */
 class RichardhjContaoEmailTokenLoginExtension extends Extension
 {
-
     /**
      * Loads a specific configuration.
      *
-     * @param array            $configs
-     * @param ContainerBuilder $container
-     *
-     * @throws \Exception If something went wrong.
+     * @throws \Exception if something went wrong
      */
     public function load(array $configs, ContainerBuilder $container): void
     {

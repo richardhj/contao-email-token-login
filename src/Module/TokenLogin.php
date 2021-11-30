@@ -1,20 +1,17 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * This file is part of richardhj/contao-email-token-login.
  *
- * Copyright (c) 2018-2018 Richard Henkenjohann
+ * Copyright (c) Richard Henkenjohann
  *
- * @package   richardhj/contao-email-token-login
- * @author    Richard Henkenjohann <richardhenkenjohann@googlemail.com>
- * @copyright 2018-2018 Richard Henkenjohann
- * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
+ * @license LGPL-3.0-or-later
  */
 
 namespace Richardhj\ContaoEmailTokenLoginBundle\Module;
 
-
-use Contao\Controller;
 use Contao\CoreBundle\Controller\FrontendModule\AbstractFrontendModuleController;
 use Contao\CoreBundle\Security\Authentication\Token\TokenChecker;
 use Contao\FrontendUser;
@@ -39,43 +36,26 @@ use Twig\Environment as TwigEnvironment;
 
 class TokenLogin extends AbstractFrontendModuleController
 {
-
     private $tokenChecker;
-
     private $logoutUrlGenerator;
-
     private $authenticationUtils;
-
     private $connection;
-
     private $tokenGenerator;
-
     private $router;
-
     private $translator;
-
     private $targetPath = '';
-
     private $twig;
 
-    public function __construct(
-        TokenChecker $tokenChecker,
-        LogoutUrlGenerator $logoutUrlGenerator,
-        AuthenticationUtils $authenticationUtils,
-        Connection $connection,
-        TokenGeneratorInterface $tokenGenerator,
-        RouterInterface $router,
-        TranslatorInterface $translator,
-        TwigEnvironment $twig
-    ) {
-        $this->tokenChecker        = $tokenChecker;
-        $this->logoutUrlGenerator  = $logoutUrlGenerator;
+    public function __construct(TokenChecker $tokenChecker, LogoutUrlGenerator $logoutUrlGenerator, AuthenticationUtils $authenticationUtils, Connection $connection, TokenGeneratorInterface $tokenGenerator, RouterInterface $router, TranslatorInterface $translator, TwigEnvironment $twig)
+    {
+        $this->tokenChecker = $tokenChecker;
+        $this->logoutUrlGenerator = $logoutUrlGenerator;
         $this->authenticationUtils = $authenticationUtils;
-        $this->connection          = $connection;
-        $this->tokenGenerator      = $tokenGenerator;
-        $this->router              = $router;
-        $this->translator          = $translator;
-        $this->twig                = $twig;
+        $this->connection = $connection;
+        $this->tokenGenerator = $tokenGenerator;
+        $this->router = $router;
+        $this->translator = $translator;
+        $this->twig = $twig;
     }
 
     protected function getResponse(Template $template, ModuleModel $model, Request $request): Response
@@ -83,12 +63,12 @@ class TokenLogin extends AbstractFrontendModuleController
         if ($this->tokenChecker->hasFrontendUser()) {
             /** @var PageModel $pageModel */
             $pageModel = $request->attributes->get('pageModel');
-            $redirect  = $request->getBaseUrl() . '/' . $request->getRequestUri();
+            $redirect = $request->getBaseUrl().'/'.$request->getRequestUri();
 
             if ($_POST) {
                 $this->targetPath = (string) $request->request->get('_target_path');
             } elseif ($model->redirectBack && ($referer = $request->query->get('referer'))) {
-                $this->targetPath = $request->getBaseUrl() . '/' . base64_decode($referer, true);
+                $this->targetPath = $request->getBaseUrl().'/'.base64_decode($referer, true);
             }
 
             if ($model->redirectBack && $this->targetPath) {
@@ -99,11 +79,11 @@ class TokenLogin extends AbstractFrontendModuleController
                 $redirect = $request->getBaseUrl();
             }
 
-            $template->logout     = true;
-            $template->formId     = 'tl_logout_' . $model->id;
-            $template->slabel     = \StringUtil::specialchars($this->translate('MSC.logout'));
+            $template->logout = true;
+            $template->formId = 'tl_logout_'.$model->id;
+            $template->slabel = \StringUtil::specialchars($this->translate('MSC.logout'));
             $template->loggedInAs = sprintf($this->translate('MSC.loggedInAs'), FrontendUser::getInstance()->username);
-            $template->action     = $this->logoutUrlGenerator->getLogoutPath();
+            $template->action = $this->logoutUrlGenerator->getLogoutPath();
             $template->targetPath = \StringUtil::specialchars($redirect);
 
             if (FrontendUser::getInstance()->lastLogin > 0) {
@@ -113,11 +93,12 @@ class TokenLogin extends AbstractFrontendModuleController
                 );
             }
 
-            return Response::create($template->parse());
+            return new Response($template->parse());
         }
 
         if (0 !== $request->request->count()) {
             $member = MemberModel::findByUsername($request->request->get('username'));
+
             if (null === $member) {
                 Message::addError($this->translate('MSC.token_login.invalid_login'), 'richardhj_token_login');
             } else {
@@ -125,21 +106,20 @@ class TokenLogin extends AbstractFrontendModuleController
                 $token = $this->tokenGenerator->generateToken();
                 $this->connection->createQueryBuilder()
                     ->insert('tl_member_login_token')
-                    ->values(
-                        [
-                            'tstamp'  => '?',
-                            'expires' => '?',
-                            'member'  => '?',
-                            'token'   => '?',
-                            'jumpTo'  => '?',
-                        ]
-                    )
+                    ->values([
+                        'tstamp' => '?',
+                        'expires' => '?',
+                        'member' => '?',
+                        'token' => '?',
+                        'jumpTo' => '?',
+                    ])
                     ->setParameter(0, time())
                     ->setParameter(1, strtotime('+2 hours'))
                     ->setParameter(2, $member->id)
                     ->setParameter(3, $token)
                     ->setParameter(4, $request->request->get('_target_path'))
-                    ->execute();
+                    ->execute()
+                ;
 
                 // Send notification
                 $notificationTokens = $this->getNotificationTokens($request, $member, $token);
@@ -159,10 +139,10 @@ class TokenLogin extends AbstractFrontendModuleController
         }
 
         $template->username = $this->translate('MSC.username');
-        $template->action   = $request->getRequestUri();
-        $template->slabel   = $this->translate('MSC.login');
-        $template->value    = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
-        $template->formId   = 't_login_' . $model->id;
+        $template->action = $request->getRequestUri();
+        $template->slabel = $this->translate('MSC.login');
+        $template->value = StringUtil::specialchars($this->authenticationUtils->getLastUsername());
+        $template->formId = 't_login_'.$model->id;
 
         $target = $model->getRelated('jumpTo');
         $targetPath = $target instanceof PageModel ? $target->getFrontendUrl() : $request->getRequestUri();
@@ -185,8 +165,8 @@ class TokenLogin extends AbstractFrontendModuleController
     {
         $notificationTokens = [
             'recipient_email' => $member->email,
-            'domain'          => $request->getHost(),
-            'link'            => $this->router->generate(
+            'domain' => $request->getHost(),
+            'link' => $this->router->generate(
                 'richardhj.contao_email_token_login.token_login',
                 ['token' => $token],
                 UrlGeneratorInterface::ABSOLUTE_URL
@@ -194,21 +174,18 @@ class TokenLogin extends AbstractFrontendModuleController
         ];
 
         foreach ($member->row() as $field => $value) {
-            $notificationTokens['member_' . $field] = $value;
+            $notificationTokens['member_'.$field] = $value;
         }
 
         try {
-            $notificationTokens['login_form_html'] = $this->twig->render(
-                '@RichardhjContaoEmailTokenLogin/login_form_email.html.twig',
-                [
-                    'loginBT'     => $this->translate('MSC.loginBT'),
-                    'form_action' => $this->router->generate(
-                        'richardhj.contao_email_token_login.token_login',
-                        ['token' => $token],
-                        UrlGeneratorInterface::ABSOLUTE_URL
-                    ),
-                ]
-            );
+            $notificationTokens['login_form_html'] = $this->twig->render('@RichardhjContaoEmailTokenLogin/login_form_email.html.twig', [
+                'loginBT' => $this->translate('MSC.loginBT'),
+                'form_action' => $this->router->generate(
+                    'richardhj.contao_email_token_login.token_login',
+                    ['token' => $token],
+                    UrlGeneratorInterface::ABSOLUTE_URL
+                ),
+            ]);
         } catch (\Exception $e) {
         }
 

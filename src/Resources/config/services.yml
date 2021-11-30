@@ -8,7 +8,6 @@ services:
             - '@security.token_storage'
             - '@database_connection'
             - '@event_dispatcher'
-            - '@twig'
             - '@translator'
             - '@contao.security.authentication_success_handler'
             - '@logger'

@@ -1,35 +1,33 @@
 <?php
 
-/**
+declare(strict_types=1);
+
+/*
  * This file is part of richardhj/contao-email-token-login.
  *
- * Copyright (c) 2018-2018 Richard Henkenjohann
+ * Copyright (c) Richard Henkenjohann
  *
- * @package   richardhj/contao-email-token-login
- * @author    Richard Henkenjohann <richardhenkenjohann@googlemail.com>
- * @copyright 2018-2018 Richard Henkenjohann
- * @license   https://github.com/richardhj/contao-email-token-login/blob/master/LICENSE
+ * @license LGPL-3.0-or-later
  */
-
 
 $GLOBALS['TL_DCA']['tl_member_login_token'] = [
     'config' => [
         'sql' => [
             'keys' => [
-                'id'     => 'primary',
+                'id' => 'primary',
                 'member' => 'index',
-                'token'  => 'unique',
+                'token' => 'unique',
             ],
         ],
     ],
     'fields' => [
-        'id'      => [
+        'id' => [
             'sql' => 'int(10) unsigned NOT NULL auto_increment',
         ],
-        'member'  => [
+        'member' => [
             'sql' => "int(10) unsigned NOT NULL default '0'",
         ],
-        'token'   => [
+        'token' => [
             'sql' => "varchar(255) NOT NULL default ''",
         ],
         'tstamp' => [
@@ -40,6 +38,6 @@ $GLOBALS['TL_DCA']['tl_member_login_token'] = [
         ],
         'jumpTo' => [
             'sql' => "varchar(255) NOT NULL default ''",
-        ]
+        ],
     ],
 ];
