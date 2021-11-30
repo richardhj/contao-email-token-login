@@ -90,11 +90,11 @@ class TokenLogin extends AbstractController
             ]);
         }
 
-        $this->invalidateToken($result->id);
+        $this->invalidateToken((int) $result->id);
 
         $request->request->set('_target_path', $result->jumpTo);
 
-        return $this->loginUser($member->username, $request);
+        return $this->loginUser((string) $member->username, $request);
     }
 
     private function loginUser(string $username, Request $request): Response
