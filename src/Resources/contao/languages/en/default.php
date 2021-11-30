@@ -13,3 +13,4 @@
 
 $GLOBALS['TL_LANG']['MSC']['token_login']['form_success'] = 'Please check your inbox to proceed with the login.';
 $GLOBALS['TL_LANG']['MSC']['token_login']['form_error'] = 'We weren\'t able to send you the login link.';
+$GLOBALS['TL_LANG']['MSC']['token_login']['invalid_login'] = 'We were unable to find a user account for the given email address.';

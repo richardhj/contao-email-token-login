@@ -119,7 +119,7 @@ class TokenLogin extends AbstractFrontendModuleController
         if (0 !== $request->request->count()) {
             $member = MemberModel::findByUsername($request->request->get('username'));
             if (null === $member) {
-                Message::addError($this->translate('ERR.invalidLogin'), 'richardhj_token_login');
+                Message::addError($this->translate('MSC.token_login.invalid_login'), 'richardhj_token_login');
             } else {
                 // Generate token
                 $token = $this->tokenGenerator->generateToken();
