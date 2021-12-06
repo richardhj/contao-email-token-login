@@ -89,7 +89,7 @@ class TokenLogin extends AbstractFrontendModuleController
             if (FrontendUser::getInstance()->lastLogin > 0) {
                 $template->lastLogin = sprintf(
                     $this->translate('MSC.lastLogin.1'),
-                    date($pageModel->datimFormat, FrontendUser::getInstance()->lastLogin)
+                    date($pageModel->datimFormat ?? 'Y-m-d', (int) FrontendUser::getInstance()->lastLogin)
                 );
             }
 
