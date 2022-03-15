@@ -18,13 +18,13 @@
     "source": "https://github.com/richardhj/contao-email-token-login"
   },
   "require": {
-    "php": ">=7.1",
-    "contao/core-bundle": "^4.9",
+    "php": ">=7.4",
+    "contao/core-bundle": "^4.13",
     "patchwork/utf8": "^1.3",
-    "symfony/config": "^4.2 || ^5.1",
-    "symfony/dependency-injection": "^4.2 || ^5.1",
-    "symfony/http-kernel": "^4.2 || ^5.1",
-    "twig/twig": "^2.12 || ^3.0",
+    "symfony/config": "^5.1",
+    "symfony/dependency-injection": "^5.1",
+    "symfony/http-kernel": "^5.1",
+    "twig/twig": "^3.0",
     "terminal42/notification_center": "^1.4"
   },
   "require-dev": {
@@ -38,5 +38,13 @@
   },
   "extra": {
     "contao-manager-plugin": "Richardhj\\ContaoEmailTokenLoginBundle\\ContaoManager\\Plugin"
+  },
+  "config": {
+    "allow-plugins": {
+      "contao-components/installer": true,
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "contao-community-alliance/composer-plugin": true,
+      "contao/manager-plugin": true
+    }
   }
 }

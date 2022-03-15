@@ -14,7 +14,6 @@ namespace Richardhj\ContaoEmailTokenLoginBundle\Controller;
 
 use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\CoreBundle\Exception\PageNotFoundException;
-use Contao\CoreBundle\Monolog\ContaoContext;
 use Contao\FrontendUser;
 use Contao\MemberModel;
 use Doctrine\DBAL\Connection;
@@ -36,14 +35,14 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class TokenLogin extends AbstractController
 {
-    private $userProvider;
-    private $tokenStorage;
-    private $connection;
-    private $dispatcher;
-    private $translator;
-    private $authenticationSuccessHandler;
-    private $logger;
-    private $userChecker;
+    private UserProviderInterface $userProvider;
+    private TokenStorageInterface $tokenStorage;
+    private Connection $connection;
+    private EventDispatcherInterface $dispatcher;
+    private TranslatorInterface $translator;
+    private AuthenticationSuccessHandlerInterface $authenticationSuccessHandler;
+    private LoggerInterface $logger;
+    private UserCheckerInterface $userChecker;
 
     public function __construct(UserProviderInterface $userProvider, TokenStorageInterface $tokenStorage, Connection $connection, EventDispatcherInterface $dispatcher, TranslatorInterface $translator, AuthenticationSuccessHandlerInterface $authenticationSuccessHandler, LoggerInterface $logger, UserCheckerInterface $userChecker)
     {
@@ -57,7 +56,7 @@ class TokenLogin extends AbstractController
         $this->userChecker = $userChecker;
     }
 
-    public function __invoke(string $token, Request $request)
+    public function __invoke(string $token, Request $request): Response
     {
         $statement = $this->connection->createQueryBuilder()
             ->select('t.id AS id', 't.member AS member', 't.jumpTo AS jumpTo')
@@ -66,16 +65,16 @@ class TokenLogin extends AbstractController
             ->andWhere('t.expires >=:time')
             ->setParameter('token', $token)
             ->setParameter('time', time())
-            ->execute()
+            ->executeQuery()
         ;
 
-        $result = $statement->fetch(\PDO::FETCH_OBJ);
+        $result = $statement->fetchAssociative();
 
         if (false === $result) {
             throw new AccessDeniedException('Token not found or expired: '.$token);
         }
 
-        $member = MemberModel::findByPk($result->member);
+        $member = MemberModel::findByPk($result['member']);
 
         if (null === $member) {
             throw new PageNotFoundException('We don\'t know who you are :-(');
@@ -90,9 +89,9 @@ class TokenLogin extends AbstractController
             ]);
         }
 
-        $this->invalidateToken((int) $result->id);
+        $this->invalidateToken((int) $result['id']);
 
-        $request->request->set('_target_path', $result->jumpTo);
+        $request->request->set('_target_path', $result['jumpTo']);
 
         return $this->loginUser((string) $member->username, $request);
     }
@@ -100,7 +99,7 @@ class TokenLogin extends AbstractController
     private function loginUser(string $username, Request $request): Response
     {
         try {
-            $user = $this->userProvider->loadUserByUsername($username);
+            $user = $this->userProvider->loadUserByIdentifier($username);
         } catch (UsernameNotFoundException $exception) {
             throw new PageNotFoundException('We don\'t know who you are :-(');
         }
@@ -121,9 +120,7 @@ class TokenLogin extends AbstractController
         $this->tokenStorage->setToken($usernamePasswordToken);
         $event = new InteractiveLoginEvent($request, $usernamePasswordToken);
         $this->dispatcher->dispatch($event);
-        $this->logger->log(LogLevel::INFO, sprintf('User "%s" was logged in automatically', $username), [
-            'contao' => new ContaoContext(__METHOD__, TL_ACCESS),
-        ]);
+        $this->logger->log(LogLevel::INFO, sprintf('User "%s" was logged in automatically', $username));
 
         return $this->authenticationSuccessHandler->onAuthenticationSuccess($request, $usernamePasswordToken);
     }
@@ -134,7 +131,7 @@ class TokenLogin extends AbstractController
             ->delete('tl_member_login_token')
             ->where('id=:id')
             ->setParameter('id', $tokenId)
-            ->execute()
+            ->executeStatement()
         ;
     }
 }

@@ -36,15 +36,15 @@ use Twig\Environment as TwigEnvironment;
 
 class TokenLogin extends AbstractFrontendModuleController
 {
-    private $tokenChecker;
-    private $logoutUrlGenerator;
-    private $authenticationUtils;
-    private $connection;
-    private $tokenGenerator;
-    private $router;
-    private $translator;
-    private $targetPath = '';
-    private $twig;
+    private TokenChecker $tokenChecker;
+    private LogoutUrlGenerator $logoutUrlGenerator;
+    private AuthenticationUtils $authenticationUtils;
+    private Connection $connection;
+    private TokenGeneratorInterface $tokenGenerator;
+    private RouterInterface $router;
+    private TranslatorInterface $translator;
+    private string $targetPath = '';
+    private TwigEnvironment $twig;
 
     public function __construct(TokenChecker $tokenChecker, LogoutUrlGenerator $logoutUrlGenerator, AuthenticationUtils $authenticationUtils, Connection $connection, TokenGeneratorInterface $tokenGenerator, RouterInterface $router, TranslatorInterface $translator, TwigEnvironment $twig)
     {
@@ -117,8 +117,8 @@ class TokenLogin extends AbstractFrontendModuleController
                     ->setParameter(1, strtotime('+2 hours'))
                     ->setParameter(2, $member->id)
                     ->setParameter(3, $token)
-                    ->setParameter(4, $request->request->get('_target_path'))
-                    ->execute()
+                    ->setParameter(4, '/' . ltrim($request->request->get('_target_path'), '/'))
+                    ->executeStatement()
                 ;
 
                 // Send notification

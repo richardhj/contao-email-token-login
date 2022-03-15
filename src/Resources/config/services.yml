@@ -10,7 +10,7 @@ services:
             - '@event_dispatcher'
             - '@translator'
             - '@contao.security.authentication_success_handler'
-            - '@logger'
+            - '@monolog.logger.contao.access'
             - '@contao.security.user_checker'
         tags: ['controller.service_arguments', { name: 'monolog.logger', channel: 'richardhj_token_login' }]
 
