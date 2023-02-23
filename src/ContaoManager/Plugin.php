@@ -31,7 +31,7 @@ class Plugin implements BundlePluginInterface, RoutingPluginInterface
     {
         return [
             BundleConfig::create(RichardhjContaoEmailTokenLoginBundle::class)
-                ->setLoadAfter([ContaoCoreBundle::class]),
+                ->setLoadAfter([ContaoCoreBundle::class, 'notification_center']),
         ];
     }
 
